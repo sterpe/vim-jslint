@@ -146,20 +146,20 @@ function! s:JSLHintToggle()
     if s:current_is_jslint
         if s:jslhint_disabled
             " D -> A. jshint + enable
-            s:current_is_jslint = 0
-            s:jslhint_disabled = 0
+            let s:current_is_jslint = 0
+            let s:jslhint_disabled = 0
         else
             " C -> D. jslint + disable
-            s:jslhint_disabled = 1
+            let s:jslhint_disabled = 1
         endif
     else
         if s:jslhint_disabled
             " B -> C. jslint + enable
-            s:current_is_jslint = 1
-            s:jslhint_disabled = 0
+            let s:current_is_jslint = 1
+            let s:jslhint_disabled = 0
         else
             " A -> B. jslint + disable
-            s:jslhint_disabled = 1
+            let s:jslhint_disabled = 1
         endif
     endif
     " update ui
@@ -282,7 +282,7 @@ function! s:JSLHint()
         return
     endif
     let jshintrc_len = len(jsrc) . "\n"
-    let cmd = s:cmd_prefix . b:current_js_checker . s:cmd_suffix
+    let cmd = s:cmd_prefix . (s:current_is_jslint ? 'jslint' : 'jshint'). s:cmd_suffix
     let output = system(cmd, jshintrc_len . join(jsrc, "\n") . "\n" . js_content)
     if v:shell_error
         echoerr output
