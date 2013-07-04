@@ -55,16 +55,18 @@ function! s:SetBufferJSLHintrc ()
         return
     endif
     let jsrc = []
-    let jsrc_file = s:current_is_jslint ? '.jslinrc' : '.jshintrc'
+    let jsrc_file = s:current_is_jslint ? '.jslintrc' : '.jshintrc'
     " try to find .jshintrc or .jslintrc in project.
     " try to find the .jshintrc or .jslintrc in ancestor directory in 6 times
     " In most cases, 6 times is enough.
     let up_limit = 6
     let counter = 0
     let temp_dir = expand('%:p:h')
+    echo temp_dir
     let project_jsrc = ''
     while (counter < up_limit && strlen(temp_dir) > 1)
         let counter = counter + 1
+        echo temp_dir . '/' . jsrc_file
         if filereadable(temp_dir . '/' . jsrc_file)
             let project_jsrc = temp_dir . '/' .jsrc_file
             " to break the while-loop
@@ -124,49 +126,37 @@ function! s:JSLHintUpdate()
     if !exists("b:jslhint_loaded")
         return
     endif
-    silent call s:JSLHint()
+    call s:JSLHint()
     call s:ShowCursorJSLHintMsg()
+endfunction
+"
+"
+function! s:JSLHintToggleChecker()
+    if !exists("b:jslhint_loaded")
+        return
+    endif
+    let s:current_is_jslint = s:current_is_jslint ? 0 : 1
+    " update ui
+    if s:jslhint_disabled
+        call s:JSLHintClear()
+    else
+        call s:JSLHintUpdate()
+    endif
+    echomsg ['JSHint', 'JSLint'][s:current_is_jslint]. ' is ' . ['enabled', 'disabled'][s:jslhint_disabled] . '.'
 endfunction
 "
 "function s:JSLHintToggle, to disabled/enable jshint
 "
-function! s:JSLHintToggle()
+function! s:JSLHintToggleEnable()
     if !exists("b:jslhint_loaded")
         return
     endif
-    "
-    " toggled status:
-    "
-    "  A. jshint + enable
-    "  B. jshint + disable
-    "  C. jslint + enable
-    "  D. jslint + disable
-    "
-    "
-    if s:current_is_jslint
-        if s:jslhint_disabled
-            " D -> A. jshint + enable
-            let s:current_is_jslint = 0
-            let s:jslhint_disabled = 0
-        else
-            " C -> D. jslint + disable
-            let s:jslhint_disabled = 1
-        endif
-    else
-        if s:jslhint_disabled
-            " B -> C. jslint + enable
-            let s:current_is_jslint = 1
-            let s:jslhint_disabled = 0
-        else
-            " A -> B. jslint + disable
-            let s:jslhint_disabled = 1
-        endif
-    endif
+    let s:jslhint_disabled = s:jslhint_disabled ? 0 : 1
     " update ui
-    if !s:jslhint_disabled
-        silent call s:JSLHintUpdate()
+    if s:jslhint_disabled
+        call s:JSLHintClear()
     else
-        silent call s:JSLHintClear()
+        call s:JSLHintUpdate()
     endif
     echomsg ['JSHint', 'JSLint'][s:current_is_jslint]. ' is ' . ['enabled', 'disabled'][s:jslhint_disabled] . '.'
 endfunction
@@ -230,9 +220,13 @@ function! s:JSLHintResultFormat (result, start_line)
             continue
         endif
         " Get line relative to selection
-        let line_num = parts[1] + (a:start_line - 1) - 1
+        if s:current_is_jslint
+            let line_num = parts[1] + (a:start_line - 1) - len(b:jslintrc)
+        else
+            let line_num = parts[1] + (a:start_line - 1) - 1
+        endif
         let error_msg = parts[4]
-
+        echo 'star line: ' . a:start_line . ' | ' . parts[1] . ' -> ' .line_num
         if line_num < 1
             echoerr '[ERROR] .js' . (s:current_is_jslint ? 'l' : 'h')  . 'intrc is error: ' . error_msg
         else
@@ -263,9 +257,10 @@ function! s:JSLHint()
     if s:jslhint_disabled
         return
     endif
-    let jsrc = s:current_is_jslint ? b:jshintrc : b:jslintrc
+    let jsrc = s:current_is_jslint ? b:jslintrc : b:jshintrc
     if len(jsrc) == 0
         call s:SetBufferJSLHintrc()
+        let jsrc = s:current_is_jslint ? b:jslintrc : b:jshintrc
     endif
     " Detect range
     if a:firstline == a:lastline
@@ -281,13 +276,17 @@ function! s:JSLHint()
     if len(js_content) == 0
         return
     endif
-    let jshintrc_len = len(jsrc) . "\n"
     let cmd = s:cmd_prefix . (s:current_is_jslint ? 'jslint' : 'jshint'). s:cmd_suffix
-    let output = system(cmd, jshintrc_len . join(jsrc, "\n") . "\n" . js_content)
+    if s:current_is_jslint
+        let output = system(cmd, join(jsrc, "\n") . "\n" . js_content)
+    else
+        let jsrc_len = len(jsrc) . "\n"
+        let output = system(cmd, jsrc_len . join(jsrc, "\n") . "\n" . js_content)
+    endif
     if v:shell_error
         echoerr output
         echoerr 'could not invoke JSLHint!'
-        call s:JSLHintToggle()
+        let s:jslhint_disabled = 1
         return
     end
     let qf_list = s:JSLHintResultFormat(output, start_line)
@@ -389,9 +388,10 @@ au CursorMoved <buffer> call s:ShowCursorJSLHintMsg()
 " export commands
 "
 if exists(':JSLHintUpdate') != 2
-    command! JSLHintUpdate :call s:JSLHintUpdate()
-    command! JSLHintToggle :call s:JSLHintToggle()
-    command! JSLHintrc :call s:EchoJSLHintrc()
+    command! JSToggle :call s:JSLHintToggleChecker()
+    command! JSToggleEnable :call s:JSLHintToggleEnable()
+    command! JSUpdate :call s:JSLHintUpdate()
+    command! JSrc :call s:EchoJSLHintrc()
 endif
 
 "
