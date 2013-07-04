@@ -12,7 +12,7 @@ endif
 "    for buffer
 "-----------------------------------------------------------------------------
 "
-if exists('b:jslhint_loaded')
+if exists('b:jslhint_loaded') || matchend(expand('%'), '.js') == -1
     finish
 endif
 let b:jslhint_loaded = 1
@@ -221,7 +221,8 @@ function! s:JSLHintResultFormat (result, start_line)
         if s:current_is_jslint
             let line_num = parts[1] + (a:start_line - 1) - len(b:jslintrc)
         else
-            let line_num = parts[1] + (a:start_line - 1) - 1
+            " parst[1] starts at 0
+            let line_num = parts[1] + (a:start_line - 1)
         endif
         let error_msg = parts[4]
         if line_num < 1
