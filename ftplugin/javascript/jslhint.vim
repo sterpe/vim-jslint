@@ -356,11 +356,6 @@ function s:ActivateJSLHintQuickFixWindow()
 endfunction
 "
 " bind events
-"
-nnoremap <buffer><silent> dd dd:JSLHintUpdate<CR>
-noremap <buffer><silent> dw dw:JSLHintUpdate<CR>
-noremap <buffer><silent> u u:JSLHintUpdate<CR>
-noremap <buffer><silent> <C-R> <C-R>:JSLHintUpdate<CR>
 
 "au BufLeave <buffer> call s:JSLHintClear()
 "clear buffer's jshintrc when buffer becoming hidden,
@@ -390,6 +385,11 @@ if exists(':JSLHintUpdate') != 2
     command! JSToggleEnable :call s:JSLHintToggleEnable()
     command! JSUpdate :call s:JSLHintUpdate()
     command! JSrc :call s:EchoJSLHintrc()
+    "
+    nnoremap <buffer><silent> dd dd:JSUpdate<CR>
+    noremap <buffer><silent> dw dw:JSUpdate<CR>
+    noremap <buffer><silent> u u:JSUpdate<CR>
+    noremap <buffer><silent> <C-R> <C-R>:JSUpdate<CR>
 endif
 
 "

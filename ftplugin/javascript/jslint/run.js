@@ -28,6 +28,14 @@ readSTDIN(function (body) {
 
     if (!ok) {
         dataInfo = JSLINT.data();
+        if (JSLINT.errors && JSLINT.errors.length) {
+            JSLINT.errors.forEach(function (item) {
+                if (item && item.line) {
+                    msg.push([item.line, item.character, ERROR,
+                        item.reason].join(':'));
+                }
+            });
+        }
         //for unused
         if (dataInfo && dataInfo.unused && dataInfo.unused.length) {
             dataInfo.unused.forEach(function (item) {
@@ -37,14 +45,6 @@ readSTDIN(function (body) {
                         ' unused: ' + item.name;
                     msg.push([item.line, item.character || 1,
                         WARN, reason].join(':'));
-                }
-            });
-        }
-        if (JSLINT.errors && JSLINT.errors.length) {
-            JSLINT.errors.forEach(function (item) {
-                if (item && item.line) {
-                    msg.push([item.line, item.character, ERROR,
-                        item.reason].join(':'));
                 }
             });
         }
