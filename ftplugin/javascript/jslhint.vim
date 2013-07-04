@@ -62,11 +62,9 @@ function! s:SetBufferJSLHintrc ()
     let up_limit = 6
     let counter = 0
     let temp_dir = expand('%:p:h')
-    echo temp_dir
     let project_jsrc = ''
     while (counter < up_limit && strlen(temp_dir) > 1)
         let counter = counter + 1
-        echo temp_dir . '/' . jsrc_file
         if filereadable(temp_dir . '/' . jsrc_file)
             let project_jsrc = temp_dir . '/' .jsrc_file
             " to break the while-loop
@@ -226,7 +224,6 @@ function! s:JSLHintResultFormat (result, start_line)
             let line_num = parts[1] + (a:start_line - 1) - 1
         endif
         let error_msg = parts[4]
-        echo 'star line: ' . a:start_line . ' | ' . parts[1] . ' -> ' .line_num
         if line_num < 1
             echoerr '[ERROR] .js' . (s:current_is_jslint ? 'l' : 'h')  . 'intrc is error: ' . error_msg
         else
