@@ -16,9 +16,6 @@ if matchend(expand('%'), '.js') == -1
     call s:JSLHintClear()
     finish
 endif
-if !exists('b:jslhint_update_time')
-    let b:jslhint_update_time = 0
-endif
 if exists('b:jslhint_loaded')
     call s:JSLHintUpdate()
     finish
@@ -134,13 +131,6 @@ function! s:JSLHintUpdate()
     if !exists("b:jslhint_loaded")
         return
     endif
-    "prevent calling frequently
-    "get millionseconds
-    let now  = strftime('%s000')
-    if now - b:jslhint_update_time < 1200
-        return
-    endif
-    let b:jslhint_update_time = now
     silent call s:JSLHint()
     silent call s:ShowCursorJSLHintMsg()
 endfunction
