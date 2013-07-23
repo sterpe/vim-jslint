@@ -12,17 +12,42 @@ endif
 "    for buffer
 "-----------------------------------------------------------------------------
 "
-if matchend(expand('%'), '.js') == -1
-    call s:JSLHintClear()
-    finish
-endif
-if exists('b:jslhint_loaded')
-    call s:JSLHintUpdate()
+if matchend(expand('%'), '.js') == -1 || exists('b:jslhint_loaded')
     finish
 endif
 let b:jslhint_loaded = 1
 let b:jshintrc = []
 let b:jslintrc = []
+let b:undo_cur_seq = 0
+" bind events
+if !exists('b:jslhint_binding')
+    let b:jslhint_binding = 1
+    "au BufLeave <buffer> call s:JSLHintClear()
+    "clear buffer's jshintrc when buffer becoming hidden,
+    "so when showing the buffer, it can reload jshintrc automatically
+    au BufHidden <buffer> call s:ClearBufferJSLHint()
+    "au BufEnter <buffer> call s:JSLHint()
+    au InsertLeave <buffer> call s:JSLHintUpdateIfModified()
+    "au InsertEnter <buffer> call s:JSLHint()
+    "au BufReadPost <buffer> call s:JSLHint()
+    au BufWritePost <buffer> call s:JSLHintUpdateIfModified()
+
+    " due to http://tech.groups.yahoo.com/group/vimdev/message/52115
+    "if(!has('win32') || v:version>702)
+        "au CursorHold <buffer> call s:JSLHint()
+        "au CursorHoldI <buffer> call s:JSLHint()
+        "au CursorHold <buffer> call s:ShowCursorJSLHintMsg()
+    "endif
+    "
+    au CursorMoved <buffer> call s:JSLHintUpdateIfModified()
+    au CursorHold <buffer> call s:JSLHintUpdateIfModified()
+    "au CursorHoldI <buffer> call s:JSLHintUpdateIfModified()
+    "
+    "nnoremap <buffer><silent> dd dd:JSUpdate<CR>
+    "noremap <buffer><silent> dw dw:JSUpdate<CR>
+    "noremap <buffer><silent> u u:JSUpdate<CR>
+    "noremap <buffer><silent> <C-R> <C-R>:JSUpdate<CR>
+endif
 "
 "-----------------------------------------------------------------------------
 "    for script
@@ -127,10 +152,13 @@ endfunction
 "
 " update jshint message
 "
+let s:counter = 1
 function! s:JSLHintUpdate()
     if !exists("b:jslhint_loaded")
         return
     endif
+    let s:counter = s:counter + 1
+    "echo 'call jsupate...' . s:counter
     silent call s:JSLHint()
     silent call s:ShowCursorJSLHintMsg()
 endfunction
@@ -332,7 +360,23 @@ function s:ShowCursorJSLHintMsg()
     if has_key(b:matchedlines, line_num)
         let  msg = get(b:matchedlines, line_num)
         call s:PrintLongMsg(msg)
-        return
+    endif
+endfunction
+
+" for good performance
+" only call JSLHintUpdate if modified
+" and if not modified,  only call s:ShowCursorJSLHintMsg 1 in 3
+let s:check_counter = 0
+function! s:JSLHintUpdateIfModified()
+    let undo_seq = undotree()['seq_cur']
+    if undo_seq == b:undo_cur_seq
+        let s:check_counter = (s:check_counter + 1) % 3
+        if s:check_counter == 0
+            call s:ShowCursorJSLHintMsg()
+        endif
+    else
+        let b:undo_cur_seq = undo_seq
+        call s:JSLHintUpdate()
     endif
 endfunction
 "
@@ -372,27 +416,6 @@ function s:ActivateJSLHintQuickFixWindow()
     endif
 endfunction
 "
-" bind events
-
-"au BufLeave <buffer> call s:JSLHintClear()
-"clear buffer's jshintrc when buffer becoming hidden,
-"so when showing the buffer, it can reload jshintrc automatically
-au BufHidden <buffer> call s:ClearBufferJSLHint()
-"au BufEnter <buffer> call s:JSLHint()
-au InsertLeave <buffer> call s:JSLHint()
-"au InsertEnter <buffer> call s:JSLHint()
-"au BufReadPost <buffer> call s:JSLHint()
-au BufWritePost <buffer> call s:JSLHint()
-
-" due to http://tech.groups.yahoo.com/group/vimdev/message/52115
-"if(!has('win32') || v:version>702)
-    "au CursorHold <buffer> call s:JSLHint()
-    "au CursorHoldI <buffer> call s:JSLHint()
-    "au CursorHold <buffer> call s:ShowCursorJSLHintMsg()
-"endif
-"
-au CursorMoved <buffer> call s:ShowCursorJSLHintMsg()
-
 "
 
 " export commands
@@ -403,11 +426,6 @@ if exists(':JSLHintUpdate') != 2
     command! JSUpdate :call s:JSLHintUpdate()
     command! JSClear :call s:ClearBufferJSLHint()
     command! JSrc :call s:EchoJSLHintrc()
-    "
-    nnoremap <buffer><silent> dd dd:JSUpdate<CR>
-    noremap <buffer><silent> dw dw:JSUpdate<CR>
-    noremap <buffer><silent> u u:JSUpdate<CR>
-    noremap <buffer><silent> <C-R> <C-R>:JSUpdate<CR>
 endif
 
 "
