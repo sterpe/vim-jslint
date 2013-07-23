@@ -12,7 +12,15 @@ endif
 "    for buffer
 "-----------------------------------------------------------------------------
 "
-if exists('b:jslhint_loaded') || matchend(expand('%'), '.js') == -1
+if matchend(expand('%'), '.js') == -1
+    call s:JSLHintClear()
+    finish
+endif
+if !exists('b:jslhint_update_time')
+    let b:jslhint_update_time = 0
+endif
+if exists('b:jslhint_loaded')
+    call s:JSLHintUpdate()
     finish
 endif
 let b:jslhint_loaded = 1
@@ -107,15 +115,17 @@ endfunction
 "
 " clear buffer
 "
-function! s:ClearBufferJSLHintrc()
+function! s:ClearBufferJSLHint()
     if !exists("b:jslhint_loaded")
         return
     endif
+    "clear jsrc
     if s:current_is_jslint
         let b:jslintrc = []
     else
         let b:jshintrc = []
     endif
+    call s:JSLHintClear()
 endfunction
 "
 " update jshint message
@@ -124,8 +134,15 @@ function! s:JSLHintUpdate()
     if !exists("b:jslhint_loaded")
         return
     endif
-    call s:JSLHint()
-    call s:ShowCursorJSLHintMsg()
+    "prevent calling frequently
+    "get millionseconds
+    let now  = strftime('%s000')
+    if now - b:jslhint_update_time < 1200
+        return
+    endif
+    let b:jslhint_update_time = now
+    silent call s:JSLHint()
+    silent call s:ShowCursorJSLHintMsg()
 endfunction
 "
 "
@@ -175,9 +192,9 @@ endfun
 "
 "
 function! s:JSLHintClear()
-    if !exists("b:jslhint_loaded")
-        return
-    endif
+    "if !exists("b:jslhint_loaded")
+        "return
+    "endif
     " Delete previous matches
     let matches = getmatches()
     for matchId in matches
@@ -186,6 +203,16 @@ function! s:JSLHintClear()
         endif
     endfor
     let b:matchedlines = {}
+    " update quickfix window
+    if exists('s:jslhint_qf')
+        " if jshint quickfix window is already created, reuse it
+        call s:ActivateJSLHintQuickFixWindow()
+        call setqflist([], 'r')
+    else
+        " one jshint quickfix window for all buffers
+        call setqflist([])
+        let s:jslhint_qf = s:GetQuickFixStackCount()
+    endif
 endfunction
 "
 " format the result of jshint checker
@@ -360,8 +387,8 @@ endfunction
 "au BufLeave <buffer> call s:JSLHintClear()
 "clear buffer's jshintrc when buffer becoming hidden,
 "so when showing the buffer, it can reload jshintrc automatically
-au BufHidden <buffer> call s:ClearBufferJSLHintrc()
-au BufEnter <buffer> call s:JSLHint()
+au BufHidden <buffer> call s:ClearBufferJSLHint()
+"au BufEnter <buffer> call s:JSLHint()
 au InsertLeave <buffer> call s:JSLHint()
 "au InsertEnter <buffer> call s:JSLHint()
 "au BufReadPost <buffer> call s:JSLHint()
@@ -384,6 +411,7 @@ if exists(':JSLHintUpdate') != 2
     command! JSToggle :call s:JSLHintToggleChecker()
     command! JSToggleEnable :call s:JSLHintToggleEnable()
     command! JSUpdate :call s:JSLHintUpdate()
+    command! JSClear :call s:ClearBufferJSLHint()
     command! JSrc :call s:EchoJSLHintrc()
     "
     nnoremap <buffer><silent> dd dd:JSUpdate<CR>
