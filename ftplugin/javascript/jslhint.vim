@@ -19,6 +19,7 @@ let b:jslhint_loaded = 1
 let b:jshintrc = []
 let b:jslintrc = []
 let b:undo_cur_seq = 0
+let b:line_num = 0
 " bind events
 if !exists('b:jslhint_binding')
     let b:jslhint_binding = 1
@@ -26,7 +27,7 @@ if !exists('b:jslhint_binding')
     "clear buffer's jshintrc when buffer becoming hidden,
     "so when showing the buffer, it can reload jshintrc automatically
     au BufHidden <buffer> call s:ClearBufferJSLHint()
-    "au BufEnter <buffer> call s:JSLHint()
+    au BufEnter <buffer> call s:JSLHint()
     au InsertLeave <buffer> call s:JSLHintUpdateIfModified()
     "au InsertEnter <buffer> call s:JSLHint()
     "au BufReadPost <buffer> call s:JSLHint()
@@ -40,7 +41,7 @@ if !exists('b:jslhint_binding')
     "endif
     "
     au CursorMoved <buffer> call s:JSLHintUpdateIfModified()
-    au CursorHold <buffer> call s:JSLHintUpdateIfModified()
+    "au CursorHold <buffer> call s:JSLHintUpdateIfModified()
     "au CursorHoldI <buffer> call s:JSLHintUpdateIfModified()
     "
     "nnoremap <buffer><silent> dd dd:JSUpdate<CR>
@@ -333,17 +334,20 @@ function! s:JSLHint()
 endfunction
 
 " show jshint message for cursor position if the message is exists
-"
+" tracing line number for performance
 function s:ShowCursorJSLHintMsg()
     if !exists("b:jslhint_loaded")
         return
     endif
+    let line_num = getpos('.')[1]
+    if line_num == b:line_num
+        return
+    endif
+    let b:line_num = line_num
     " Bail if RunJSLHint hasn't been called yet
     if !exists('b:matchedlines')
         return
     endif
-    let cursorPos = getpos('.')
-    let line_num = cursorPos[1]
     if has_key(b:matchedlines, line_num)
         let  msg = get(b:matchedlines, line_num)
         call s:PrintLongMsg(msg)
@@ -354,12 +358,12 @@ endfunction
 " only call JSLHintUpdate if modified
 " and if not modified,  only be called  1  time in 5
 " -1 => make sure the first time will be run
-let s:check_counter = -1
+"let s:check_counter = -1
 function! s:JSLHintUpdateIfModified()
-    let s:check_counter = (s:check_counter + 1) % 5
-    if s:check_counter != 0
-        return
-    endif
+    "let s:check_counter = (s:check_counter + 1) % 5
+    "if s:check_counter != 0
+        "return
+    "endif
 
     let undo_seq = undotree()['seq_cur']
     if undo_seq == b:undo_cur_seq
