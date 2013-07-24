@@ -26,9 +26,8 @@ readSTDIN(function (body) {
         globals,
         jshintrcLen = parseInt(body.shift(), 10),
         options,
-        OK = 'OK',
         msg = [],
-        JSLINTRC_ERROR = 'JSLINTRC_ERROR',
+        WARN = 'WARN',
         ERROR = 'ERROR';
 
     if (jshintrcLen === 0) {
@@ -39,7 +38,7 @@ readSTDIN(function (body) {
         try {
             options = JSON.parse(options);
         } catch (ex) {
-            print([0, 0, JSLINTRC_ERROR,
+            print([0, 0, ERROR,
                 'BAD options in .jslinrc file'].join(':'));
             return;
         }
@@ -60,6 +59,6 @@ readSTDIN(function (body) {
         });
         print(msg.join('\n'));
     } else {
-        print([1, 1, OK, 'No problems in this file!'].join(':'));
+        print([0, 0, WARN, 'No problems in this file!'].join(':'));
     }
 });

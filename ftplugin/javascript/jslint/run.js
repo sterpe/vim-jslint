@@ -22,7 +22,6 @@ readSTDIN(function (body) {
     var ok = JSLINT(body),
         dataInfo,
         msg = [],
-        OK = 'OK',
         WARN = 'WARN',
         ERROR = 'ERROR';
 
@@ -49,7 +48,7 @@ readSTDIN(function (body) {
             });
         }
     } else {
-        msg.push([0, 0, OK, 'NO errors in this file'].join(':'));
+        msg.push([0, 0, WARN, 'NO errors in this file'].join(':'));
     }
     print(msg.join('\n'));
 });

@@ -245,17 +245,6 @@ function! s:JSLHintResultFormat (result, start_line)
     let qf_list = []
     let buf_num = bufnr('%')
     let file_name = expand('%:t')
-    if len(output) == 1
-        " Match {line}:{char}:{error or warn}:{message}
-        let parts = matchlist(output[0], '\v(\d+):(\d+):([A-Z]+):(.*)')
-        if empty(parts)
-            return []
-        endif
-        if parts[3] == 'OK' || parts[3] == 'JSLINTRC_ERROR'
-            echomsg parts[4]
-            return []
-        endif
-    endif
     for error in output
         " Match {line}:{char}:{error or warn}:{message}
         let parts = matchlist(error, '\v(\d+):(\d+):([A-Z]+):(.*)')
@@ -270,24 +259,22 @@ function! s:JSLHintResultFormat (result, start_line)
             let line_num = parts[1] + (a:start_line - 1)
         endif
         let error_msg = parts[4]
-        if line_num < 1
-            echoerr '[ERROR] .js' . (s:current_is_jslint ? 'l' : 'h')  . 'intrc is error: ' . error_msg
-        else
+        if line_num >= 1
             " Store the error for an error under the cursor
             let b:matchedlines[line_num] = error_msg
             if g:JSLHint_highlight_error == 1
                 call matchadd('JSLHintError', '\v%' . line_num . 'l\S.*(\S|$)')
             endif
-            " Add line to  list
-            call add(qf_list, {
-                \ 'bufnr' : buf_num,
-                \ 'filename' : file_name,
-                \ 'lnum' : line_num,
-                \ 'col' : parts[2],
-                \ 'text' : error_msg,
-                \ 'type' : parts[3] == 'ERROR' ? 'E' : 'W'
-                \ })
         endif
+        " Add line to  list
+        call add(qf_list, {
+            \ 'bufnr' : buf_num,
+            \ 'filename' : file_name,
+            \ 'lnum' : line_num,
+            \ 'col' : parts[2],
+            \ 'text' : error_msg,
+            \ 'type' : parts[3] == 'ERROR' ? 'E' : 'W'
+            \ })
     endfor
     return qf_list
 endfunction
@@ -365,15 +352,18 @@ endfunction
 
 " for good performance
 " only call JSLHintUpdate if modified
-" and if not modified,  only call s:ShowCursorJSLHintMsg 1 in 3
-let s:check_counter = 0
+" and if not modified,  only be called  1  time in 3
+" -1 => make sure the first time will be run
+let s:check_counter = -1
 function! s:JSLHintUpdateIfModified()
+    let s:check_counter = (s:check_counter + 1) % 3
+    if s:check_counter != 0
+        return
+    endif
+
     let undo_seq = undotree()['seq_cur']
     if undo_seq == b:undo_cur_seq
-        let s:check_counter = (s:check_counter + 1) % 3
-        if s:check_counter == 0
-            call s:ShowCursorJSLHintMsg()
-        endif
+        call s:ShowCursorJSLHintMsg()
     else
         let b:undo_cur_seq = undo_seq
         call s:JSLHintUpdate()
