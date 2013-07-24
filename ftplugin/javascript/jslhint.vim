@@ -352,11 +352,11 @@ endfunction
 
 " for good performance
 " only call JSLHintUpdate if modified
-" and if not modified,  only be called  1  time in 3
+" and if not modified,  only be called  1  time in 5
 " -1 => make sure the first time will be run
 let s:check_counter = -1
 function! s:JSLHintUpdateIfModified()
-    let s:check_counter = (s:check_counter + 1) % 3
+    let s:check_counter = (s:check_counter + 1) % 5
     if s:check_counter != 0
         return
     endif
