@@ -1,9 +1,13 @@
 jslhint.vim
 ===========
-jslint and jshint all in one
+jslint and jshint all in one with good performance.
 
+##Performance
 
+If you use `jslint.vim` and/or `jshint.vim` to check javascript code at real
+time, you will find that the cursor moves slowly, especially on windows.
 
+So you should use `jslhint.vim`, for it is optimized and has good performance.
 
 ##Installation
 1. First of all, you should install node.js and you can find instructions for installing node.js on the [node.js website](http://nodejs.org/).
@@ -32,11 +36,11 @@ filetype plugin on
 
 - You also can call it manually via `:JSUpdate`.
 
-- You can toggle jslint and jshint with the command `:JSToggle`.
+- You can toggle `jslint` and `jshint` engines with the command `:JSToggle`.
 
-- You can toggle automatic checking on or off with the command `:JSToggleEnable`.
-  You can modify your `~/.vimrc` file to bind this command to a key or to turn
-  off error checking by default.
+- You can toggle automatically checking on or off with the command
+`:JSToggleEnable`.  You can modify your `~/.vimrc` file to bind this command to
+a key or to turn off error checking by default.
 
 - (optional) Putting all jslint options into one file -- `.jslintrc` . The
   `.jslintrc` file should be placed under the root of project. It will be used as
