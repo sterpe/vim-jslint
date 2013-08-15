@@ -84,8 +84,8 @@ let g:JSLHint_jshint_default = 0
 * `g:JSLHint_auto_check`
 
 Checking JavaScript code at real time and automatically or not, default value
-is `1`. If you want to manually call command manually, please add configuration
-in `.vimrc`:
+is `1`. If you want to manually call command manually, please disable auto
+checking in `.vimrc`. For example:
 
 ```vim
 "disable auto checking
