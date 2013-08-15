@@ -4,7 +4,7 @@ jslint and jshint all in one with good performance.
 
 ##Performance
 
-If you use `jslint.vim` and/or `jshint.vim` to check javascript code at real
+If you use `jslint.vim` and/or `jshint.vim` to check JavaScript code at real
 time, you will find that the cursor moves slowly, especially on windows.
 
 So you should use `jslhint.vim`, for it is optimized and has good performance.
@@ -68,6 +68,35 @@ a key or to turn off error checking by default.
 }
 
 ```
+
+##Configuration
+
+* `g:JSLHint_jshint_default`
+
+Set `jshint` as the default JavaScript checking engine or not, default value is
+`1`. If you want to set `jslint` as the default JavaScript checking engine,
+please add this line in `.vimrc`:
+
+```vim
+let g:JSLHint_jshint_default = 0
+```
+
+* `g:JSLHint_auto_check`
+
+Checking JavaScript code at real time and automatically or not, default value
+is `1`. If you want to manually call command manually, please add configuration
+in `.vimrc`:
+
+```vim
+"disable auto checking
+let g:JSLHint_auto_check = 0
+"to check JavaScript code when entering/writing buffer
+au BufEnter,BufWritePost *.js JSUpdate
+```
+
+* `g:JSLHint_highlight_error`
+
+Highlight error line or not, default is `1`.
 
 ##Next
 * open quick-fix window automatically
