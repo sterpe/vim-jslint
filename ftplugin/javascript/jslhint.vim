@@ -8,6 +8,7 @@ if !executable('node')
     finish
 endif
 
+
 "-----------------------------------------------------------------------------
 "    for buffer
 "-----------------------------------------------------------------------------
@@ -21,7 +22,7 @@ let b:jslintrc = []
 let b:undo_cur_seq = 0
 let b:line_num = 0
 " bind events
-if !exists('b:jslhint_binding')
+if (!exists('g:JSLHint_auto_check') || g:JSLHint_auto_check) &&  !exists('b:jslhint_binding')
     let b:jslhint_binding = 1
     "au BufLeave <buffer> call s:JSLHintClear()
     "clear buffer's jshintrc when buffer becoming hidden,
@@ -59,7 +60,11 @@ if exists('s:jslhint_loaded')
 endif
 let s:jslhint_loaded = 1
 " 0 1
-let s:current_is_jslint = 0
+if !exists('g:JSLHint_jshint_default') || g:JSLHint_jshint_default
+    let s:current_is_jslint = 0
+else
+    let s:current_is_jslint = 1
+endif
 " 0 1
 let s:jslhint_disabled = 0
 
@@ -73,8 +78,8 @@ else
     let s:cmd_suffix = '/run.js"'
 endif
 "
-highlight link JSLHintError SpellBad
-if !exists('g:JSLHint_highlight_error')
+if !exists('g:JSLHint_highlight_error') || g:JSLHint_highlight_error
+    highlight link JSLHintError SpellBad
     let g:JSLHint_highlight_error = 1
 endif
 
