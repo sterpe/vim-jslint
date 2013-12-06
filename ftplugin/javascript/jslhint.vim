@@ -24,31 +24,16 @@ let b:line_num = 0
 " bind events
 if (!exists('g:JSLHint_auto_check') || g:JSLHint_auto_check) &&  !exists('b:jslhint_binding')
     let b:jslhint_binding = 1
+
     "au BufLeave <buffer> call s:ClearUI()
     "clear buffer's jshintrc when buffer becoming hidden,
     "so when showing the buffer, it can reload jshintrc automatically
     au BufHidden <buffer> call s:ClearBuffer()
     au BufEnter <buffer> call s:Check()
-    au InsertLeave <buffer> call s:UpdateIfModified()
-    "au InsertEnter <buffer> call s:Check()
-    "au BufReadPost <buffer> call s:Check()
-    au BufWritePost <buffer> call s:UpdateIfModified()
 
-    " due to http://tech.groups.yahoo.com/group/vimdev/message/52115
-    "if(!has('win32') || v:version>702)
-        "au CursorHold <buffer> call s:Check()
-        "au CursorHoldI <buffer> call s:Check()
-        "au CursorHold <buffer> call s:ShowLineError()
-    "endif
-    "
+    au InsertLeave <buffer> call s:UpdateIfModified()
+    au BufWritePost <buffer> call s:UpdateIfModified()
     au CursorMoved <buffer> call s:UpdateIfModified()
-    "au CursorHold <buffer> call s:UpdateIfModified()
-    "au CursorHoldI <buffer> call s:UpdateIfModified()
-    "
-    "nnoremap <buffer><silent> dd dd:JSUpdate<CR>
-    "noremap <buffer><silent> dw dw:JSUpdate<CR>
-    "noremap <buffer><silent> u u:JSUpdate<CR>
-    "noremap <buffer><silent> <C-R> <C-R>:JSUpdate<CR>
 endif
 "
 "-----------------------------------------------------------------------------
@@ -60,27 +45,35 @@ if exists('s:jslhint_loaded')
 endif
 let s:jslhint_loaded = 1
 " 0 1
-if !exists('g:JSLHint_jshint_default') || g:JSLHint_jshint_default
-    let s:js_lint = 0
-else
+let s:js_lint = 0
+if exists('g:JSLHint_jshint_default') && g:JSLHint_jshint_default == 0
     let s:js_lint = 1
 endif
 " 0 1
 let s:is_disabled = 0
 
-let s:plugin_path = expand('<sfile>:p:h')
-if has('win32')
-    let s:plugin_path = substitute(s:plugin_path, '/', '\', 'g')
-    let s:cmd_prefix= 'cmd.exe /C "cd /d "' . s:plugin_path . '" && node "' . s:plugin_path . '/'
-    let s:cmd_suffix = '/run.js""'
-else
-    let s:cmd_prefix = 'cd "' . s:plugin_path . '" && node "' . s:plugin_path . '/'
-    let s:cmd_suffix = '/run.js"'
-endif
-"
+function! s:GetCheckerInfo ()
+    let path = expand('<sfile>:p:h')
+    if has('win32')
+        let path = substitute(path, '/', '\', 'g')
+        let prefix= 'cmd.exe /C "cd /d "' . path . '" && node "' . path . '/'
+        let suffix = '/run.js""'
+    else
+        let prefix = 'cd "' . path . '" && node "' . path . '/'
+        let suffix = '/run.js"'
+    endif
+
+    return {
+        \ 'prefix': prefix,
+        \ 'suffix': suffix
+        \ }
+endfun
+
+let s:checkerInfo = s:GetCheckerInfo()
+
 if !exists('g:JSLHint_highlight_error') || g:JSLHint_highlight_error
-    highlight link JSLHintError SpellBad
     let g:JSLHint_highlight_error = 1
+    highlight link JSLHintError SpellBad
 endif
 
 " .jshintrc or .jslintrc
@@ -158,13 +151,10 @@ endfunction
 "
 " update jshint message
 "
-let s:counter = 1
 function! s:UpdateCheck()
     if !exists("b:jslhint_loaded")
         return
     endif
-    let s:counter = s:counter + 1
-    "echo 'call jsupate...' . s:counter
     silent call s:Check()
     silent call s:ShowLineError()
 endfunction
@@ -227,15 +217,15 @@ function! s:ClearUI()
         endif
     endfor
     let b:matchedlines = {}
-    " update quickfix window
-    if exists('s:jslhint_qf')
-        " if jshint quickfix window is already created, reuse it
-        call s:ActivateQuickfix()
-        call setqflist([], 'r')
+    " update location list window
+    if exists('s:check_loclist')
+        " if jshint location list window is already created, reuse it
+        call s:ActivateLoclist()
+        call setloclist(0, [], 'r')
     else
-        " one jshint quickfix window for all buffers
-        call setqflist([])
-        let s:jslhint_qf = s:GetQuickfixStackCount()
+        " one jshint location list window for all buffers
+        call setloclist(0, [])
+        let s:check_loclist = s:GetLoclistStackCount()
     endif
 endfunction
 "
@@ -248,7 +238,7 @@ function! s:FormatResult (result, start_line)
         return []
     endif
     let output = split(a:result, "\n")
-    let qf_list = []
+    let loc_list = []
     let buf_num = bufnr('%')
     let file_name = expand('%:t')
     for error in output
@@ -273,7 +263,7 @@ function! s:FormatResult (result, start_line)
             endif
         endif
         " Add line to  list
-        call add(qf_list, {
+        call add(loc_list, {
             \ 'bufnr' : buf_num,
             \ 'filename' : file_name,
             \ 'lnum' : line_num,
@@ -282,7 +272,7 @@ function! s:FormatResult (result, start_line)
             \ 'type' : parts[3] == 'ERROR' ? 'E' : 'W'
             \ })
     endfor
-    return qf_list
+    return loc_list
 endfunction
 
 function! s:Check()
@@ -312,7 +302,7 @@ function! s:Check()
     if len(js_content) == 0
         return
     endif
-    let cmd = s:cmd_prefix . (s:js_lint ? 'jslint' : 'jshint'). s:cmd_suffix
+    let cmd = s:checkerInfo['prefix'] . (s:js_lint ? 'jslint' : 'jshint'). s:checkerInfo['suffix']
     if s:js_lint
         let output = system(cmd, join(jsrc, "\n") . "\n" . js_content)
     else
@@ -325,15 +315,15 @@ function! s:Check()
         let s:is_disabled = 1
         return
     end
-    let qf_list = s:FormatResult(output, start_line)
-    if exists('s:jslhint_qf')
-        " if jshint quickfix window is already created, reuse it
-        call s:ActivateQuickfix()
-        call setqflist(qf_list, 'r')
+    let loc_list = s:FormatResult(output, start_line)
+    if exists('s:check_loclist')
+        " if jshint location list window is already created, reuse it
+        call s:ActivateLoclist()
+        call setloclist(0, loc_list, 'r')
     else
-        " one jshint quickfix window for all buffers
-        call setqflist(qf_list)
-        let s:jslhint_qf = s:GetQuickfixStackCount()
+        " one jshint location list window for all buffers
+        call setloclist(0, loc_list)
+        let s:check_loclist = s:GetLoclistStackCount()
     endif
     "noautocmd copen
 endfunction
@@ -381,16 +371,16 @@ endfunction
 "
 "
 "
-function s:GetQuickfixStackCount()
+function s:GetLoclistStackCount()
     let stack_count = 0
     try
-        silent colder 9
+        silent lolder 9
     catch /E380:/
     endtry
 
     try
         for i in range(9)
-            silent cnewer
+            silent lnewer
             let stack_count = stack_count + 1
         endfor
     catch /E381:/
@@ -400,17 +390,17 @@ endfunction
 "
 "
 "
-function s:ActivateQuickfix()
+function s:ActivateLoclist()
     try
-        silent colder 9 " go to the bottom of quickfix stack
+        silent lolder 9 " go to the bottom of location list stack
     catch /E380:/
     catch /E788:/
     endtry
-    if s:jslhint_qf > 0
+    if s:check_loclist > 0
         try
-            exe 'silent cnewer ' . s:jslhint_qf
+            exe 'silent lnewer ' . s:check_loclist
         catch /E381:/
-            echoerr 'Could not activate JSLHint Quickfix Window.'
+            echoerr 'Could not activate JSLHint location list  Window.'
         endtry
     endif
 endfunction
