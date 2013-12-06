@@ -2,12 +2,11 @@
 " The plugin is only works with node.js and the installed directory should be
 " added to $PATH
 "
-" only support nodeJS
+" need support of nodeJS
 if !executable('node')
-    echoerr 'Node.js is not found!'
+    echoerr 'nodeJS is not found!'
     finish
 endif
-
 
 "-----------------------------------------------------------------------------
 "    for buffer
@@ -24,13 +23,11 @@ let b:line_num = 0
 " bind events
 if (!exists('g:JSLHint_auto_check') || g:JSLHint_auto_check) &&  !exists('b:jslhint_binding')
     let b:jslhint_binding = 1
-
-    "au BufLeave <buffer> call s:ClearUI()
     "clear buffer's jshintrc when buffer becoming hidden,
     "so when showing the buffer, it can reload jshintrc automatically
-    au BufHidden <buffer> call s:ClearBuffer()
+    "au BufHidden <buffer> call s:ClearBuffer()
+    au BufLeave <buffer> call s:ClearBuffer()
     au BufEnter <buffer> call s:Check()
-
     au InsertLeave <buffer> call s:UpdateIfModified()
     au BufWritePost <buffer> call s:UpdateIfModified()
     au CursorMoved <buffer> call s:UpdateIfModified()
@@ -39,6 +36,78 @@ endif
 "-----------------------------------------------------------------------------
 "    for script
 "-----------------------------------------------------------------------------
+
+let s:loclist = {}
+function! s:loclist.GetStackCount ()
+    let stack_count = 0
+    try
+        silent lolder 9
+    catch /E380:/
+    endtry
+    try
+        for i in range(9)
+            silent lnewer
+            let stack_count = stack_count + 1
+        endfor
+    catch /E381:/
+        return stack_count
+    endtry
+endfunction
+
+
+function! s:loclist.Activate ()
+    try
+        silent lolder 9 " go to the bottom of location list stack
+    catch /E380:/
+    catch /E788:/
+    endtry
+    if s:check_loclist > 0
+        try
+            exe 'silent lnewer ' . s:check_loclist
+        catch /E381:/
+            echoerr 'Could not activate JSLHint location list  Window.'
+        endtry
+    endif
+endfunction
+
+"@param {List} errors
+function! s:loclist.SetList(errors)
+    if exists('s:check_loclist')
+        " if jshint location list window is already created, reuse it
+        call s:loclist.Activate()
+        call setloclist(0, a:errors, 'r')
+    else
+        " one jshint location list window for all buffers
+        call setloclist(0, a:errors)
+        let s:check_loclist = s:loclist.GetStackCount()
+    endif
+    call s:loclist.Open()
+endfunction
+
+function! s:loclist.Clear()
+    call s:loclist.SetList([])
+endfunction
+
+function! s:loclist.Open()
+    let num = winnr()
+    execute "lopen " . g:JSLHint_win_height
+    if num != winnr()
+        wincmd p
+    endif
+endfunction
+
+function! s:loclist.Close()
+    execute "lclose"
+endfunction
+
+function! s:loclist.Set()
+    if !exists('w:jslhint_loclist_set')
+        let w:jslhint_loclist_set = 0
+    endif
+    call setloclist(0, [], w:jslhint_loclist_set ? 'r' : ' ')
+    let w:jslhint_loclist_set = 1
+endfunction
+
 "
 if exists('s:jslhint_loaded')
     finish
@@ -52,17 +121,17 @@ endif
 " 0 1
 let s:is_disabled = 0
 
+let s:pluginPath = expand('<sfile>:p:h')
+
 function! s:GetCheckerInfo ()
-    let path = expand('<sfile>:p:h')
     if has('win32')
-        let path = substitute(path, '/', '\', 'g')
-        let prefix= 'cmd.exe /C "cd /d "' . path . '" && node "' . path . '/'
+        let s:pluginPath = substitute(s:pluginPath, '/', '\', 'g')
+        let prefix= 'cmd.exe /C "cd /d "' . s:pluginPath . '" && node "' . s:pluginPath . '/'
         let suffix = '/run.js""'
     else
-        let prefix = 'cd "' . path . '" && node "' . path . '/'
+        let prefix = 'cd "' . s:pluginPath . '" && node "' . s:pluginPath . '/'
         let suffix = '/run.js"'
     endif
-
     return {
         \ 'prefix': prefix,
         \ 'suffix': suffix
@@ -74,6 +143,9 @@ let s:checkerInfo = s:GetCheckerInfo()
 if !exists('g:JSLHint_highlight_error') || g:JSLHint_highlight_error
     let g:JSLHint_highlight_error = 1
     highlight link JSLHintError SpellBad
+endif
+if !exists('g:JSLHint_win_height')
+    let g:JSLHint_win_height = ''
 endif
 
 " .jshintrc or .jslintrc
@@ -103,7 +175,6 @@ function! s:SetBuffer ()
             let temp_dir = fnamemodify(temp_dir, ':h')
         endif
     endwhile
-
     "try to find user's .jshintrc only when the project has no .jshintrc
     if len(project_jsrc) > 2 && filereadable(project_jsrc)
         let jsrc = readfile(project_jsrc)
@@ -121,7 +192,7 @@ function! s:SetBuffer ()
     endif
 endfunction
 "
-" echo jsrc
+" echo checker's configuration
 "
 function! s:EchoConfig()
     if !exists("b:jslhint_loaded")
@@ -147,6 +218,7 @@ function! s:ClearBuffer()
         let b:jshintrc = []
     endif
     call s:ClearUI()
+    call s:loclist.Close()
 endfunction
 "
 " update jshint message
@@ -206,9 +278,6 @@ endfun
 "
 "
 function! s:ClearUI()
-    "if !exists("b:jslhint_loaded")
-        "return
-    "endif
     " Delete previous matches
     let matches = getmatches()
     for matchId in matches
@@ -217,16 +286,7 @@ function! s:ClearUI()
         endif
     endfor
     let b:matchedlines = {}
-    " update location list window
-    if exists('s:check_loclist')
-        " if jshint location list window is already created, reuse it
-        call s:ActivateLoclist()
-        call setloclist(0, [], 'r')
-    else
-        " one jshint location list window for all buffers
-        call setloclist(0, [])
-        let s:check_loclist = s:GetLoclistStackCount()
-    endif
+    call s:loclist.Clear()
 endfunction
 "
 " format the result of jshint checker
@@ -240,7 +300,6 @@ function! s:FormatResult (result, start_line)
     let output = split(a:result, "\n")
     let loc_list = []
     let buf_num = bufnr('%')
-    let file_name = expand('%:t')
     for error in output
         " Match {line}:{char}:{error or warn}:{message}
         let parts = matchlist(error, '\v(\d+):(\d+):([A-Z]+):(.*)')
@@ -265,13 +324,13 @@ function! s:FormatResult (result, start_line)
         " Add line to  list
         call add(loc_list, {
             \ 'bufnr' : buf_num,
-            \ 'filename' : file_name,
             \ 'lnum' : line_num,
             \ 'col' : parts[2],
             \ 'text' : error_msg,
             \ 'type' : parts[3] == 'ERROR' ? 'E' : 'W'
             \ })
     endfor
+
     return loc_list
 endfunction
 
@@ -315,17 +374,8 @@ function! s:Check()
         let s:is_disabled = 1
         return
     end
-    let loc_list = s:FormatResult(output, start_line)
-    if exists('s:check_loclist')
-        " if jshint location list window is already created, reuse it
-        call s:ActivateLoclist()
-        call setloclist(0, loc_list, 'r')
-    else
-        " one jshint location list window for all buffers
-        call setloclist(0, loc_list)
-        let s:check_loclist = s:GetLoclistStackCount()
-    endif
-    "noautocmd copen
+    let errorList = s:FormatResult(output, start_line)
+    call s:loclist.SetList(errorList)
 endfunction
 
 " show jshint message for cursor position if the message is exists
@@ -351,15 +401,7 @@ endfunction
 
 " for good performance
 " only call UpdateCheck if modified
-" and if not modified,  only be called  1  time in 5
-" -1 => make sure the first time will be run
-"let s:check_counter = -1
 function! s:UpdateIfModified()
-    "let s:check_counter = (s:check_counter + 1) % 5
-    "if s:check_counter != 0
-        "return
-    "endif
-
     let undo_seq = undotree()['seq_cur']
     if undo_seq == b:undo_cur_seq
         call s:ShowLineError()
@@ -368,47 +410,8 @@ function! s:UpdateIfModified()
         call s:UpdateCheck()
     endif
 endfunction
-"
-"
-"
-function s:GetLoclistStackCount()
-    let stack_count = 0
-    try
-        silent lolder 9
-    catch /E380:/
-    endtry
-
-    try
-        for i in range(9)
-            silent lnewer
-            let stack_count = stack_count + 1
-        endfor
-    catch /E381:/
-        return stack_count
-    endtry
-endfunction
-"
-"
-"
-function s:ActivateLoclist()
-    try
-        silent lolder 9 " go to the bottom of location list stack
-    catch /E380:/
-    catch /E788:/
-    endtry
-    if s:check_loclist > 0
-        try
-            exe 'silent lnewer ' . s:check_loclist
-        catch /E381:/
-            echoerr 'Could not activate JSLHint location list  Window.'
-        endtry
-    endif
-endfunction
-"
-"
 
 " export commands
-"
 if exists(':UpdateCheck') != 2
     command! JSToggle :call s:ToggleChecker()
     command! JSToggleEnable :call s:ToggleEnable()
