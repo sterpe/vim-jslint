@@ -26,7 +26,6 @@ if (!exists('g:JSLHint_auto_check') || g:JSLHint_auto_check) &&  !exists('b:jslh
     "clear buffer's jshintrc when buffer becoming hidden,
     "so when showing the buffer, it can reload jshintrc automatically
     "au BufHidden <buffer> call s:ClearBuffer()
-    au BufLeave <buffer> call s:OnBufferLeave()
     au BufEnter <buffer> call s:Check()
     au InsertLeave <buffer> call s:UpdateIfModified()
     au BufWritePost <buffer> call s:UpdateIfModified()
@@ -36,6 +35,12 @@ endif
 "-----------------------------------------------------------------------------
 "    for script
 "-----------------------------------------------------------------------------
+
+if exists('s:jslhint_loaded')
+    finish
+endif
+let s:jslhint_loaded = 1
+" 0 1
 
 let s:loclist = {}
 function! s:loclist.GetStackCount ()
@@ -100,11 +105,6 @@ function! s:loclist.Close()
     execute "lclose"
 endfunction
 
-if exists('s:jslhint_loaded')
-    finish
-endif
-let s:jslhint_loaded = 1
-" 0 1
 let s:js_lint = 0
 if exists('g:JSLHint_jshint_default') && g:JSLHint_jshint_default == 0
     let s:js_lint = 1
@@ -211,17 +211,6 @@ function! s:ClearBuffer()
     call s:ClearUI()
 endfunction
 
-function! s:OnBufferLeave()
-    "if &previewwindow
-        "return
-    "endif
-    "let winIndex = winnr()
-    "echo winIndex . ': ' . winnr()
-    "wincmd p
-    "call s:ClearBuffer()
-    "call s:loclist.Close()
-endfunction
-"
 " update jshint message
 "
 function! s:UpdateCheck()
@@ -301,6 +290,7 @@ function! s:FormatResult (result, start_line)
     let output = split(a:result, "\n")
     let loc_list = []
     let buf_num = bufnr('%')
+    let b:matchedlines = {}
     for error in output
         " Match {line}:{char}:{error or warn}:{message}
         let parts = matchlist(error, '\v(\d+):(\d+):([A-Z]+):(.*)')
