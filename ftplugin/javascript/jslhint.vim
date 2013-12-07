@@ -26,7 +26,7 @@ if (!exists('g:JSLHint_auto_check') || g:JSLHint_auto_check) &&  !exists('b:jslh
     "clear buffer's jshintrc when buffer becoming hidden,
     "so when showing the buffer, it can reload jshintrc automatically
     "au BufHidden <buffer> call s:ClearBuffer()
-    au BufLeave <buffer> call s:ClearBuffer()
+    au BufLeave <buffer> call s:OnBufferLeave()
     au BufEnter <buffer> call s:Check()
     au InsertLeave <buffer> call s:UpdateIfModified()
     au BufWritePost <buffer> call s:UpdateIfModified()
@@ -100,15 +100,6 @@ function! s:loclist.Close()
     execute "lclose"
 endfunction
 
-function! s:loclist.Set()
-    if !exists('w:jslhint_loclist_set')
-        let w:jslhint_loclist_set = 0
-    endif
-    call setloclist(0, [], w:jslhint_loclist_set ? 'r' : ' ')
-    let w:jslhint_loclist_set = 1
-endfunction
-
-"
 if exists('s:jslhint_loaded')
     finish
 endif
@@ -218,7 +209,17 @@ function! s:ClearBuffer()
         let b:jshintrc = []
     endif
     call s:ClearUI()
-    call s:loclist.Close()
+endfunction
+
+function! s:OnBufferLeave()
+    "if &previewwindow
+        "return
+    "endif
+    "let winIndex = winnr()
+    "echo winIndex . ': ' . winnr()
+    "wincmd p
+    "call s:ClearBuffer()
+    "call s:loclist.Close()
 endfunction
 "
 " update jshint message
