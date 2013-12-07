@@ -10,13 +10,15 @@ time, you will find that the cursor moves slowly, especially on windows.
 So you should use `jslhint.vim`, for it is optimized and has good performance.
 
 ##Installation
-1. First of all, you should install node.js and you can find instructions for installing node.js on the [node.js website](http://nodejs.org/).
+1. First of all, you should install node.js and you can find instructions for
+   installing node.js on the [node.js website](http://nodejs.org/).
 
 
 2. Then,  copy the directory `ftplugin/` into your Vim `ftplugin` directory.
 Usually this is `~/.vim/ftplugin/`. On Windows it is `~/vimfiles/ftplugin/`.
 
-3. Finally, activate filetype plugins in your `.vimrc`, by adding the following line:
+3. Finally, activate filetype plugins in your `.vimrc`, by adding the following
+   line:
 
 ```vim
 filetype plugin on
@@ -28,8 +30,8 @@ filetype plugin on
 - This plugin automatically checks the JavaScript source and highlights the
   lines with errors.
 
-  All errors will be displayed in `quickfix` window in vim. So you should open
-  the  `quickfix` window with the command `:copen`.
+  All errors will be displayed in `location-list` window in vim and the window
+  can be opened automatically.
 
   It also will display more information about the error in the command line if
   the cursor is in the same line.
@@ -99,6 +101,7 @@ au BufEnter,BufWritePost *.js JSUpdate
 Highlight error line or not, default is `1`.
 
 ##Next
-* open quick-fix window automatically
+* open/close `location-list` window automatically [done, but has bugs]
+
 
 
