@@ -86,7 +86,7 @@ function! s:loclist.SetList(errors)
         call setloclist(0, a:errors)
         let s:check_loclist = s:loclist.GetStackCount()
     endif
-    call s:loclist.Open()
+    "call s:loclist.Open()
 endfunction
 
 function! s:loclist.Clear()

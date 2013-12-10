@@ -14,8 +14,8 @@ if exists('s:jslhint_fix_loaded')
 endif
 let s:jslhint_fix_loaded = 1
 
-autocmd BufEnter * call s:OnBufferEnter()
-autocmd BufLeave * call s:OnBufferLeave()
+"autocmd BufEnter * call s:OnBufferEnter()
+"autocmd BufLeave * call s:OnBufferLeave()
 
 function! s:OnBufferEnter()
     let fileTypes = ["javascript", "qf", "nerdtree", "tagbar"]
