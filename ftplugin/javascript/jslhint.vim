@@ -27,9 +27,9 @@ if (!exists('g:JSLHint_auto_check') || g:JSLHint_auto_check) &&  !exists('b:jslh
     "so when showing the buffer, it can reload jshintrc automatically
     "au BufHidden <buffer> call s:ClearBuffer()
     au BufEnter <buffer> call s:Check()
-    au InsertLeave <buffer> call s:UpdateIfModified()
+    "au InsertLeave <buffer> call s:UpdateIfModified()
     au BufWritePost <buffer> call s:UpdateIfModified()
-    au CursorMoved <buffer> call s:UpdateIfModified()
+    "au CursorMoved <buffer> call s:UpdateIfModified()
 endif
 "
 "-----------------------------------------------------------------------------
