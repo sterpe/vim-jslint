@@ -30,6 +30,7 @@ if (!exists('g:JSLHint_auto_check') || g:JSLHint_auto_check) &&  !exists('b:jslh
     "au InsertLeave <buffer> call s:UpdateIfModified()
     au BufWritePost <buffer> call s:UpdateIfModified()
     "au CursorMoved <buffer> call s:UpdateIfModified()
+    au CursorMoved <buffer> call s:ShowLineError()
 endif
 "
 "-----------------------------------------------------------------------------
