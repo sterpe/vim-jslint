@@ -2,7 +2,8 @@
 /*jshint node: true, unused: true, indent: 4, quotmark: single, eqnull: true, maxlen: 80*/
 
 var print = require('util').puts,
-    JSLINT = require('jslint');
+    jsLintLoader = require('jslint'),
+    JSLINT = jsLintLoader.load('latest');
 
 
 function readSTDIN(callback) {
