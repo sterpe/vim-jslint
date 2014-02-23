@@ -26,7 +26,7 @@ readSTDIN(function (body) {
         WARN = 'WARN',
         ERROR = 'ERROR';
 
-    if (!ok) {
+    if (true || !ok) {
         dataInfo = JSLINT.data();
         if (JSLINT.errors && JSLINT.errors.length) {
             JSLINT.errors.forEach(function (item) {
