@@ -7,31 +7,28 @@
 function open_jslintrc(path) {
     "use strict";
 
-    var fs = require('fs'),
-        exports;
+    var exports;
 
     function getUserHome() {
         return process.env.HOME || process.env.HOMEPATH ||
                 process.env.USERPROFILE;
     }
+    /*jslint stupid:true */
+    function openAndParseJSON(path) {
+        var fs = require('fs');
 
-    try {
-        /*jslint stupid:true */
-        exports = JSON.parse(fs.readFileSync(path + '.jslintrc', {
+        return JSON.parse(fs.readFileSync(path + '.jslintrc', {
             encoding: "utf8",
             flag: "r"
         }));
-        /*jslint stupid:false */
+    }
+    /*jslint stupid:false */
+    try {
+        exports = openAndParseJSON(path);
     } catch (e) {
         if (path === '/') {
             try {
-                /*jslint stupid:true */
-                exports = JSON.parse(fs.readFileSync(getUserHome() +
-                    '/.jslintrc', {
-                        encoding: "utf8",
-                        flag: "r"
-                    }));
-                /*jslint stupid:false */
+                exports = openAndParseJSON(getUserHome() + '/');
             } catch (E) {
                 exports = {};
             }
