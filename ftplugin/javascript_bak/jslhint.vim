@@ -72,10 +72,10 @@ let s:plugin_path = expand('<sfile>:p:h')
 if has('win32')
     let s:plugin_path = substitute(s:plugin_path, '/', '\', 'g')
     let s:cmd_prefix= 'cmd.exe /C "cd /d "' . s:plugin_path . '" && node "' . s:plugin_path . '/'
-    let s:cmd_suffix = '/run.js"" '. fnamemodify('.', ':p')
+    let s:cmd_suffix = '/run.js""'
 else
     let s:cmd_prefix = 'cd "' . s:plugin_path . '" && node "' . s:plugin_path . '/'
-    let s:cmd_suffix = '/run.js" '. fnamemodify('.', ':p')
+    let s:cmd_suffix = '/run.js"'
 endif
 "
 if !exists('g:JSLHint_highlight_error') || g:JSLHint_highlight_error
@@ -248,25 +248,23 @@ function! s:JSLHintResultFormat (result, start_line)
         return []
     endif
     let output = split(a:result, "\n")
-    "echo output
     let qf_list = []
     let buf_num = bufnr('%')
     let file_name = expand('%:t')
     for error in output
         " Match {line}:{char}:{error or warn}:{message}
-        let parts = matchlist(error, '\v(\d+):(\d+):(.*)') "matchlist(error, '\v(\d+):(\d+):([A-Z]+):(.*)')
+        let parts = matchlist(error, '\v(\d+):(\d+):([A-Z]+):(.*)')
         if empty(parts)
             continue
         endif
         " Get line relative to selection
-        "if s:current_is_jslint
-        "    let line_num = parts[2] + (a:start_line - 1) - len(b:jslintrc)
-        "else
+        if s:current_is_jslint
+            let line_num = parts[1] + (a:start_line - 1) - len(b:jslintrc)
+        else
             " parst[1] starts at 0
-        "    let line_num = parts[2] + (a:start_line - 1)
-        "endif
-        let line_num = parts[1] - 1
-        let error_msg = parts[3]
+            let line_num = parts[1] + (a:start_line - 1)
+        endif
+        let error_msg = parts[4]
         if line_num >= 1
             " Store the error for an error under the cursor
             let b:matchedlines[line_num] = error_msg
@@ -275,14 +273,13 @@ function! s:JSLHintResultFormat (result, start_line)
             endif
         endif
         " Add line to  list
-            "parts[3] == 'ERROR' ? 'E' : 'W'
         call add(qf_list, {
             \ 'bufnr' : buf_num,
             \ 'filename' : file_name,
             \ 'lnum' : line_num,
             \ 'col' : parts[2],
             \ 'text' : error_msg,
-            \ 'type' : 'E' 
+            \ 'type' : parts[3] == 'ERROR' ? 'E' : 'W'
             \ })
     endfor
     return qf_list
@@ -298,7 +295,7 @@ function! s:JSLHint()
     endif
     let jsrc = s:current_is_jslint ? b:jslintrc : b:jshintrc
     if len(jsrc) == 0
-        "call s:SetBufferJSLHintrc()
+        call s:SetBufferJSLHintrc()
         let jsrc = s:current_is_jslint ? b:jslintrc : b:jshintrc
     endif
     " Detect range
@@ -338,7 +335,6 @@ function! s:JSLHint()
         call setqflist(qf_list)
         let s:jslhint_qf = s:GetQuickFixStackCount()
     endif
-    redraw!
     "noautocmd copen
 endfunction
 

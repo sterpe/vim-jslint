@@ -1,0 +1,9 @@
+{
+  "name": "jslint.vim",
+  "version": "1.0.0",
+  "dependencies": {
+    "jslint": "~0.2.11"
+  },
+  "license": "BSD",
+  "main": "main.js"
+}
