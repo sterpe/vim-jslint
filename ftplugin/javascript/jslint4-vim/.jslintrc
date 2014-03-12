@@ -1,0 +1,7 @@
+{
+    "maxlen": 80,
+    "node": true,
+    "nomen": true,
+    "stupid": true,
+    "unparam": true
+}
