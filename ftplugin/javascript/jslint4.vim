@@ -19,7 +19,8 @@ let s:plugin_path = expand('<sfile>:p:h')
 function! s:InitLintPlugin()
  
   let b:last_changedtick = b:changedtick
- 
+  let b:highlights = []
+  let b:cursor_msg = {}
   if has("win32")
     let s:plugin_path = substitute(s:plugin_path, '/', '\', 'g')
   endif
@@ -32,6 +33,8 @@ function! s:InitLintPlugin()
   au InsertEnter <buffer> call s:RecordCurrentTick()
   au InsertLeave <buffer> call s:MaybeLint()
   au CursorMoved <buffer> call s:MaybeLint()
+  au CursorMoved <buffer> call s:GetCursorError()
+  au CursorHold <buffer> call s:GetCursorError()
 
 endfunction
 
@@ -42,6 +45,22 @@ function! s:RunLintCmd(cmd, from, to)
 
 endfunction
 
+function! s:WideMsg(msg)
+  let x = &ruler | let y = &showcmd
+  set noruler noshowcmd
+  redraw
+  echo a:msg
+  let &ruler = x | let &showcmd = y
+endfunction 
+
+function! s:GetCursorError()
+  let l:curr_pos = getpos('.')
+
+  if has_key(b:cursor_msg, l:curr_pos[1])
+    call s:WideMsg(get(b:cursor_msg, l:curr_pos[1]))
+  endif
+endfunction 
+
 function! s:HighlightLintErrors(lint) 
   for l:element in split(a:lint, '\n')
     let l:data = matchlist(l:element, '\m\(\d\+\):\(\d\+\):\(.*\)')
@@ -49,9 +68,9 @@ function! s:HighlightLintErrors(lint)
       let l:line = l:data[1]
       let l:column = l:data[2]
       let l:msg = l:data[3]
-      call matchadd('LintError', '\m\%' . l:line . 'l\(\(\S\p*\)\|\(\s\+\)\)$')
-      "'l\(\S\p*\|\s*$\)')
-    "echoerr l:msg
+      let l:id = matchadd('LintError', '\m\%' . l:line . 'l\(\(\S\p*\)\|\(\s\+\)\)$')
+      call add(b:highlights, l:id)
+      let b:cursor_msg[l:line] = l:msg
     endif
   endfor
 endfunction
@@ -69,23 +88,30 @@ function! s:Lint()
     let b:lint_disabled = 1
     return 1
   end
-  
-  call s:HighlightLintErrors(l:lint)
-  "echom l:lint
+   
   redraw! 
-
+  call s:HighlightLintErrors(l:lint)
 endfunction 
+
+function! s:ClearHighlighting()
+
+  for i in b:highlights
+    call matchdelete(i)
+  endfor
+
+  let b:highlights = []
+  let b:cursor_msg = {}
+endfunction
 
 function! s:MaybeLint()
 
     if b:last_changedtick != b:changedtick
       let b:last_changedtick = b:changedtick
-      call clearmatches()
+      call s:ClearHighlighting()
       call s:Lint()
     endif
 
 endfunction
-
 function! s:RecordCurrentTick() 
 
   let b:last_changedtick = b:changedtick
