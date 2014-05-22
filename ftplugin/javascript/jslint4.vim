@@ -1,6 +1,6 @@
-"Author: srterpe@gmail.com
+"Author: sterpe@rubiconproject.com
 "
-
+"
 if exists("b:did_jslint_plugin")
   finish
 else
@@ -31,6 +31,7 @@ function! s:InitLintPlugin()
   
   au BufEnter <buffer> call s:Lint()
   au InsertEnter <buffer> call s:RecordCurrentTick()
+  au InsertEnter <buffer> call s:Lint()
   au InsertLeave <buffer> call s:MaybeLint()
   au CursorMoved <buffer> call s:MaybeLint()
   au CursorMoved <buffer> call s:GetCursorError()
@@ -41,24 +42,21 @@ endfunction
 function! s:RunLintCmd(cmd, from, to)
 
   let l:javascript = join(getline(a:from, a:to),"\n")
+  if len(l:javascript) == 0
+    return
+  endif
   return system(a:cmd, l:javascript)
 
 endfunction
 
-function! s:WideMsg(msg)
-  let x = &ruler | let y = &showcmd
-  set noruler noshowcmd
-  redraw
-  echo a:msg
-  let &ruler = x | let &showcmd = y
-endfunction 
 
 function! s:GetCursorError()
+  
   let l:curr_pos = getpos('.')
-
   if has_key(b:cursor_msg, l:curr_pos[1])
     call s:WideMsg(get(b:cursor_msg, l:curr_pos[1]))
   endif
+
 endfunction 
 
 function! s:HighlightLintErrors(lint) 
@@ -101,6 +99,7 @@ function! s:ClearHighlighting()
 
   let b:highlights = []
   let b:cursor_msg = {}
+
 endfunction
 
 function! s:MaybeLint()
@@ -112,10 +111,22 @@ function! s:MaybeLint()
     endif
 
 endfunction
+
+function! s:WideMsg(msg)
+
+  let x = &ruler | let y = &showcmd
+  set noruler noshowcmd
+  redraw
+  echo a:msg
+  let &ruler = x | let &showcmd = y
+
+endfunction
+
 function! s:RecordCurrentTick() 
 
   let b:last_changedtick = b:changedtick
 
 endfunction
+
 
 call s:InitLintPlugin()
