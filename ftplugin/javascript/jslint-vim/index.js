@@ -17,7 +17,7 @@ process.stdin.on('data', function (chunk) {
     errors,
     i;
 
-  options = find(filepath, '.jslintrc', {});
+  options = find(filepath, '.jslintrc', {}) || {};
 
   options = JSON.parse(options);
 
