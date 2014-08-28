@@ -1,0 +1,15 @@
+{
+  "name": "jslint-vim",
+  "version": "0.0.1",
+  "description": "jslint-vim",
+  "main": "index.js",
+  "dependencies": {
+    "jslint": "~0.2.11"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "sterpe <srterpe@gmail.com> (https://github.com/sterpe)",
+  "license": "MIT"
+}
