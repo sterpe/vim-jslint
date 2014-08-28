@@ -17,9 +17,13 @@ process.stdin.on('data', function (chunk) {
     errors,
     i;
 
-  options = find(filepath, '.jslintrc', {}) || {};
+  options = find(filepath, '.jslintrc', {});
 
-  options = JSON.parse(options);
+  try {
+    options = JSON.parse(options);
+  } catch (e) {
+    options = {};
+  }
 
   chunk = chunk.replace(regex, "");
 
