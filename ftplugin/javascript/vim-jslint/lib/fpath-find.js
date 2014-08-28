@@ -27,7 +27,6 @@ module.exports = {
 
   _open: function (tgt_path, file) {
     "use strict";
-    console.log(tgt_path, file);
     return fs.readFileSync(tgt_path + file, {
       encoding: "utf8",
       flag: "r"
@@ -49,7 +48,6 @@ module.exports = {
 
   _find: function (tgt_path, file, _default) {
     "use strict";
-    console.log(arguments);
     try {
       return this._search(this._normalize(tgt_path), file,
           this._getFileSystemRoot(tgt_path));
