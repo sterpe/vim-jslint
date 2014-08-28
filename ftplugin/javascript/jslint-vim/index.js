@@ -9,7 +9,7 @@ var JSLINT = require('jslint').load('latest'),
   regex = new RegExp("^#![^\\n]*");
 
 process.stdin.setEncoding('utf8');
-console.log(process.argv);
+
 process.stdin.on('data', function (chunk) {
   "use strict";
 
@@ -18,8 +18,9 @@ process.stdin.on('data', function (chunk) {
     i;
 
   options = find(filepath, '.jslintrc', {});
-  console.log(options);
+
   options = JSON.parse(options);
+
   chunk = chunk.replace(regex, "");
 
   for (i = 0, JSLINT(chunk, options),
