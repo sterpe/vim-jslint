@@ -1,6 +1,6 @@
 {
-  "name": "jslint-vim",
-  "version": "0.0.1",
+  "name": "vim-jslint",
+  "version": "0.0.2",
   "description": "jslint-vim",
   "main": "index.js",
   "dependencies": {

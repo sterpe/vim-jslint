@@ -25,7 +25,7 @@ function! s:InitLintPlugin()
     let s:plugin_path = substitute(s:plugin_path, '/', '\', 'g')
   endif
 
-  let s:cmd = "node " . s:plugin_path . "/jslint-vim " . expand("%")
+  let s:cmd = "node " . s:plugin_path . "/vim-jslint " . expand("%")
   
   highlight link LintError SpellBad
   
